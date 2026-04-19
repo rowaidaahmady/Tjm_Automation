@@ -9,6 +9,7 @@ MAX_POSTS = 10
 MAX_GROUNDING_RETRIES = 3
 RETRY_DELAY_SECONDS = 1.0
 BETWEEN_POST_PAUSE = 1.5
+SHOW_DESKTOP_PAUSE = 1.0  # seconds to wait after Win+D before grounding
 DOUBLE_CLICK_PAUSE = 0.3
 CACHE_VERIFY_PAUSE = 1.0   # seconds to wait after clicking cached coords before checking window
 ICON_LABEL = "Notepad"

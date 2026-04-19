@@ -1,4 +1,5 @@
 import logging
+import msvcrt
 import os
 import time
 
@@ -16,6 +17,7 @@ from .settings import (
     ICON_LABEL,
     NOTEPAD_TITLE_FRAGMENT,
     OUTPUT_DIR,
+    SHOW_DESKTOP_PAUSE,
 )
 
 logger = logging.getLogger(__name__)
@@ -23,11 +25,19 @@ logger = logging.getLogger(__name__)
 
 def run_workflow() -> None:
     """Fetch 10 posts, open Notepad for each, type the content, and save it."""
+    logger.info("Showing desktop...")
+    pyautogui.hotkey("win", "d")
+    time.sleep(SHOW_DESKTOP_PAUSE)
+
     posts = fetch_posts()
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     cached_center = None
 
     for post in posts:
+        if msvcrt.kbhit() and msvcrt.getch() == b"\x1b":
+            logger.warning("ESC pressed — stopping workflow.")
+            break
+
         post_id = post["id"]
         logger.info("--- Processing post %d ---", post_id)
 
