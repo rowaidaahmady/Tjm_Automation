@@ -38,27 +38,24 @@ def locate_icon() -> tuple[int, int]:
 
 
 def _find_icon() -> tuple[int, int] | None:
-    """Try BotCity template match first; fall back to OCR if it fails or no image exists."""
+    """Try template matching first; fall back to OCR if it fails or no image exists."""
     if os.path.exists(REFERENCE_IMAGE_PATH):
-        center = _botcity_match()
+        center = _template_match()
         if center:
             return center
-        logger.warning("BotCity match failed; falling back to OCR.")
+        logger.warning("Template match failed; falling back to OCR.")
     else:
         logger.warning("Reference image not found at %s; using OCR.", REFERENCE_IMAGE_PATH)
 
     return _ocr_find()
 
 
-def _botcity_match() -> tuple[int, int] | None:
-    """Use BotCity to locate the icon on screen via template matching."""
+def _template_match() -> tuple[int, int] | None:
+    """Locate the icon using BotCity's image matching against a live desktop screenshot."""
     try:
         bot = DesktopBot()
-        element = bot.find_image(
-            REFERENCE_IMAGE_PATH,
-            matching=TEMPLATE_CONFIDENCE_THRESHOLD,
-            waiting_time=1.0,
-        )
+        bot.add_image(ICON_LABEL, REFERENCE_IMAGE_PATH)
+        element = bot.find(ICON_LABEL, matching=TEMPLATE_CONFIDENCE_THRESHOLD, waiting_time=0)
         if element is None:
             logger.debug("BotCity returned no match.")
             return None
