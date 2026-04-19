@@ -18,7 +18,7 @@ SCREENSHOTS_DIR = os.path.join(os.path.dirname(__file__), "..", "screenshots")
 # Grounding
 TEMPLATE_CONFIDENCE_THRESHOLD = 0.7
 OCR_SIMILARITY_THRESHOLD = 0.6
-DEFAULT_REFERENCE_IMAGE = os.path.join(os.path.dirname(__file__), "notepad.png")
+DEFAULT_REFERENCE_IMAGE = os.path.join(os.path.dirname(__file__), "resources", "notepad_icon.png")
 
 # Notepad
 NOTEPAD_TITLE_FRAGMENT = "Notepad"
