@@ -3,8 +3,10 @@ import os
 import time
 
 import cv2
+import easyocr
 import mss
 import numpy as np
+from botcity.core import DesktopBot
 
 from .settings import (
     ICON_LABEL,
@@ -51,17 +53,11 @@ def _find_icon() -> tuple[int, int] | None:
 def _botcity_match() -> tuple[int, int] | None:
     """Use BotCity to locate the icon on screen via template matching."""
     try:
-        from botcity.core import DesktopBot
-    except ImportError:
-        logger.warning("botcity-framework-core not installed; skipping BotCity match.")
-        return None
-
-    try:
         bot = DesktopBot()
         element = bot.find_image(
             REFERENCE_IMAGE_PATH,
             matching=TEMPLATE_CONFIDENCE_THRESHOLD,
-            waiting_time=0,
+            waiting_time=1.0,
         )
         if element is None:
             logger.debug("BotCity returned no match.")
@@ -76,12 +72,6 @@ def _botcity_match() -> tuple[int, int] | None:
 
 def _ocr_find() -> tuple[int, int] | None:
     """Use EasyOCR to scan the desktop for the icon label; return center (x, y) or None."""
-    try:
-        import easyocr
-    except ImportError:
-        logger.error("easyocr is not installed; OCR fallback unavailable.")
-        return None
-
     logger.info("Running OCR scan for '%s'...", ICON_LABEL)
 
     with mss.mss() as sct:
