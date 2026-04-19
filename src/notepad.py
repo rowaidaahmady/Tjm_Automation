@@ -5,7 +5,10 @@ import time
 import pyautogui
 import pygetwindow as gw
 
+from .grounder import locate_icon
 from .settings import (
+    CACHE_VERIFY_PAUSE,
+    DOUBLE_CLICK_PAUSE,
     NOTEPAD_TITLE_FRAGMENT,
     OPEN_TIMEOUT_SECONDS,
     POLL_INTERVAL_SECONDS,
@@ -15,6 +18,24 @@ from .settings import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def open_notepad(cached_center: tuple[int, int] | None) -> tuple[int, int]:
+    """Try cached coordinates first; re-ground and retry if Notepad does not open."""
+    if cached_center:
+        pyautogui.doubleClick(*cached_center)
+        time.sleep(CACHE_VERIFY_PAUSE)
+        if check_window_opened():
+            logger.info("Notepad opened using cached coordinates %s.", cached_center)
+            return cached_center
+        logger.info("Cached coordinates did not open Notepad; re-grounding...")
+
+    center = locate_icon()
+    pyautogui.doubleClick(*center)
+    time.sleep(DOUBLE_CLICK_PAUSE)
+    if not wait_for_notepad():
+        raise RuntimeError(f"Notepad did not open after clicking at {center}.")
+    return center
 
 
 def check_window_opened(title: str = NOTEPAD_TITLE_FRAGMENT) -> bool:
@@ -65,9 +86,16 @@ def save_as(file_path: str) -> None:
     pyautogui.typewrite(file_path, interval=TYPING_INTERVAL_SECONDS)
     pyautogui.press("enter")
     time.sleep(AFTER_DIALOG_PAUSE)
-    pyautogui.press("enter")  # confirm overwrite if prompted
+    _confirm_overwrite_if_prompted()
     time.sleep(POLL_INTERVAL_SECONDS)
     logger.info("Saved file to %s.", file_path)
+
+
+def _confirm_overwrite_if_prompted() -> None:
+    """Press Alt+Y on the 'Confirm Save As' dialog if it appears."""
+    if gw.getWindowsWithTitle("Confirm Save As"):
+        logger.info("Overwrite prompt detected; confirming with Alt+Y.")
+        pyautogui.hotkey("alt", "y")
 
 
 def close_notepad() -> None:
