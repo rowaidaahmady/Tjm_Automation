@@ -1,0 +1,29 @@
+[project]
+name = "desktop-automator"
+version = "0.1.0"
+description = "Desktop automation tool that locates Notepad via computer vision and enters post data."
+requires-python = ">=3.11"
+dependencies = [
+    "botcity-framework-core",
+    "easyocr",
+    "pyautogui",
+    "pygetwindow",
+    "mss",
+    "pillow",
+    "opencv-python",
+    "requests",
+    "numpy",
+]
+
+[project.scripts]
+automate = "main:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[tool.uv]
+dev-dependencies = []
