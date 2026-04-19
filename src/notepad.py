@@ -99,10 +99,21 @@ def _confirm_overwrite_if_prompted() -> None:
 
 
 def close_notepad() -> None:
-    """Close Notepad, discarding any unsaved changes."""
-    focus_notepad()
-    pyautogui.hotkey("alt", "F4")
-    time.sleep(POLL_INTERVAL_SECONDS)
-    pyautogui.press("n")  # "Don't Save" if prompted
-    time.sleep(POLL_INTERVAL_SECONDS)
-    logger.info("Notepad closed.")
+    """Close any open Notepad window, searching by partial title if needed."""
+    try:
+        windows = gw.getWindowsWithTitle(NOTEPAD_TITLE_FRAGMENT)
+
+        if not windows:
+            for title in gw.getAllTitles():
+                if "notepad" in title.lower():
+                    windows = gw.getWindowsWithTitle(title)
+                    break
+
+        if windows:
+            windows[0].close()
+            time.sleep(POLL_INTERVAL_SECONDS)
+            logger.info("Notepad closed.")
+        else:
+            logger.warning("No Notepad window found to close.")
+    except Exception as exc:
+        logger.error("Error closing Notepad: %s", exc)
