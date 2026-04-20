@@ -19,6 +19,17 @@ from .settings import (
 
 logger = logging.getLogger(__name__)
 
+_ocr_reader: easyocr.Reader | None = None
+
+
+def _get_ocr_reader() -> easyocr.Reader:
+    """Return the cached EasyOCR reader, initialising it on the first call."""
+    global _ocr_reader
+    if _ocr_reader is None:
+        logger.info("Loading EasyOCR model (first use only)...")
+        _ocr_reader = easyocr.Reader(["en"], gpu=False)
+    return _ocr_reader
+
 
 def locate_icon() -> tuple[int, int]:
     """Find the Notepad icon with retries; raise RuntimeError if all attempts fail."""
@@ -75,7 +86,7 @@ def _ocr_find() -> tuple[int, int] | None:
         raw = sct.grab(sct.monitors[0])
     screenshot = cv2.cvtColor(np.array(raw), cv2.COLOR_BGRA2RGB)
 
-    reader = easyocr.Reader(["en"], gpu=False)
+    reader = _get_ocr_reader()
     best_center, best_score = None, 0.0
 
     for bbox, text, confidence in reader.readtext(screenshot):
