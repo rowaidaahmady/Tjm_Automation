@@ -30,5 +30,4 @@ AFTER_OPEN_PAUSE = 1.0
 AFTER_DIALOG_PAUSE = 0.5
 
 # Run config — edit these before running
-ANNOTATE = False          # set True to save annotated screenshots to screenshots/
 REFERENCE_IMAGE_PATH = DEFAULT_REFERENCE_IMAGE  # path to notepad icon PNG

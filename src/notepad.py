@@ -6,9 +6,11 @@ import pyautogui
 import pygetwindow as gw
 
 from .grounder import locate_icon
+from .utils import take_screenshot, annotate_screenshot, save_annotated_screenshot
 from .settings import (
     CACHE_VERIFY_PAUSE,
     DOUBLE_CLICK_PAUSE,
+    ICON_LABEL,
     MAX_GROUNDING_RETRIES,
     NOTEPAD_TITLE_FRAGMENT,
     OPEN_TIMEOUT_SECONDS,
@@ -22,7 +24,7 @@ from .settings import (
 logger = logging.getLogger(__name__)
 
 
-def open_notepad(cached_center: tuple[int, int] | None) -> tuple[int, int]:
+def open_notepad(cached_center: tuple[int, int] | None, post_id: int) -> tuple[int, int]:
     """Try cached coordinates first, then re-ground and retry up to MAX_GROUNDING_RETRIES times."""
     if cached_center:
         pyautogui.doubleClick(*cached_center)
@@ -33,8 +35,13 @@ def open_notepad(cached_center: tuple[int, int] | None) -> tuple[int, int]:
         logger.info("Cached coordinates did not open Notepad; re-grounding...")
 
     for attempt in range(1, MAX_GROUNDING_RETRIES + 1):
-        center = locate_icon()
-        x, y = int(center[0]), int(center[1])  # cast away np.int64
+        center, confidence, method = locate_icon()
+        x, y = int(center[0]), int(center[1])
+
+        screenshot = take_screenshot()
+        annotated = annotate_screenshot(screenshot, (x, y), ICON_LABEL, confidence, method)
+        save_annotated_screenshot(annotated, post_id)
+
         logger.info("Clicking icon at (%d, %d), attempt %d/%d.", x, y, attempt, MAX_GROUNDING_RETRIES)
         pyautogui.doubleClick(x, y)
         time.sleep(DOUBLE_CLICK_PAUSE)

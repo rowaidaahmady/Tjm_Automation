@@ -1,17 +1,26 @@
-# Desktop Automator
+# TJM Automation
 
-A Python desktop automation tool that dynamically locates the Notepad icon on a
-Windows desktop using computer vision, then fetches 10 posts from a public API and
-saves each one as a `.txt` file — fully hands-free.
+A Windows desktop automation tool that finds the Notepad icon on the desktop using computer vision, opens it, and saves 10 blog posts as individual text files — all without any human interaction.
+
+---
+
+## What It Does
+
+1. Presses **Win + D** to show the desktop
+2. Locates the Notepad icon using template matching (BotCity) or OCR fallback
+3. Double-clicks it to open Notepad
+4. Fetches 10 posts from [JSONPlaceholder](https://jsonplaceholder.typicode.com/posts)
+5. For each post: types the content, saves it to `~/Desktop/tjm-project/post_{id}.txt`, closes Notepad
+6. Saves an annotated screenshot every time the icon is detected
 
 ---
 
 ## Prerequisites
 
-- Windows 10 / 11
-- A **Notepad shortcut visible on the desktop** (the tool looks for the icon there)
-- [Python 3.11+](https://python.org)
-- [uv](https://docs.astral.sh/uv/) — `pip install uv`
+- Windows 10 or 11
+- A **Notepad shortcut visible on the desktop**
+- Python 3.11+
+- [uv](https://docs.astral.sh/uv/) — install with `pip install uv`
 
 ---
 
@@ -23,62 +32,91 @@ uv sync
 
 ---
 
-## Usage
+## Running
 
 ```bash
-# BotCity template-matching strategy
-uv run automate --grounding botcity
-
-# OCR text-detection strategy
-uv run automate --grounding ocr
-
-# Save annotated screenshots (green bounding box) to screenshots/
-uv run automate --grounding botcity --annotate
-uv run automate --grounding ocr --annotate
-
-# Supply a custom reference image for BotCity
-uv run automate --grounding botcity --reference-image path/to/notepad_icon.png
+uv run python main.py
 ```
 
-Output files are written to `~/Desktop/tjm-project/post_1.txt … post_10.txt`.
+Press **ESC** at any time to stop cleanly between posts.
 
 ---
 
-## Grounding Strategies
+## How Icon Detection Works
 
-### Strategy 1 — BotCity (`--grounding botcity`)
+### Step 1 — Template Matching (BotCity)
 
-Uses **template matching** (via BotCity's vision engine or OpenCV as a fallback) to
-compare a reference crop of the Notepad icon against the live desktop screenshot.
+The bot compares a reference image (`src/resources/notepad_icon.png`) against a live screenshot of the desktop using BotCity's image matching engine. This is fast (under 1 second) and accurate when the icon looks the same as the reference image.
 
-**Works best when:** the Notepad icon looks identical (or very similar) to the
-reference image — same OS theme, same icon pack, no heavy scaling.
+- Configure the confidence threshold in `src/settings.py` → `TEMPLATE_CONFIDENCE_THRESHOLD` (default: `0.7`)
+- The reference image path is `src/settings.py` → `REFERENCE_IMAGE_PATH`
 
-**Limitation:** fails if the icon appearance changes (different theme, custom icon,
-DPI scaling without a matching reference).
+### Step 2 — OCR Fallback (EasyOCR)
 
-### Strategy 2 — OCR (`--grounding ocr`)
+If no reference image is found, or if template matching returns no result, the bot falls back to OCR. It scans the full desktop screenshot for text that matches "Notepad" and returns the center of the closest match.
 
-Uses **EasyOCR** to scan the desktop for the text label *"Notepad"* that appears
-beneath the icon. No reference image needed — pure text recognition.
-
-**Works best when:** the icon label is clearly readable and not obscured by other
-windows or wallpaper patterns.
-
-**Limitation:** may misfire if another item on the desktop has "Notepad" in its name,
-or if the desktop font is very small / anti-aliased in a way OCR struggles with.
+- OCR is slower on the **first run** (~18 seconds to load the model), but subsequent calls reuse the cached reader and are much faster.
+- Useful when the icon looks different from the reference (e.g. different theme or icon pack).
 
 ---
 
-## Known Limitations
+## Coordinate Caching
 
-| Scenario | Behaviour |
+After successfully opening Notepad for the first time, the bot stores the icon's `(x, y)` coordinates in memory. For every subsequent post, it tries those cached coordinates first — double-clicking them and immediately checking if Notepad opened.
+
+- **Cache hit**: Notepad opens → skip grounding entirely, saves time.
+- **Cache miss**: Notepad does not open within the verify pause → discard cache, run full grounding again, update cache with the new coordinates.
+
+This means grounding only runs when needed, not for every single post.
+
+---
+
+## Annotated Screenshots
+
+Every time the bot locates the Notepad icon (via template or OCR), it saves an annotated screenshot to `screenshots/` before clicking.
+
+Each screenshot shows:
+
+- A **green rectangle** around the detected icon
+- The detection **method** (Template or OCR)
+- The **confidence score** as a percentage
+- The **pixel coordinates** of the detection
+
+Files are named: `annotated_post1.png`, `annotated_post2.png`, etc.
+
+---
+
+## Output
+
+| Location | Contents |
 | --- | --- |
-| Notepad icon not on desktop | Raises an error after 3 retries |
-| API unreachable | Raises `RuntimeError` with a clear message |
-| DPI > 100 % (BotCity) | May need a reference image captured at that DPI |
-| Notepad "new tab" version (Win 11) | Save-As dialog path may differ; tested on classic Notepad |
-| Multiple "Notepad" text on desktop | OCR picks the highest-confidence match |
+| `~/Desktop/tjm-project/` | `post_1.txt` through `post_10.txt` |
+| `screenshots/` | `annotated_post1.png` through `annotated_post10.png` |
+
+Each text file contains:
+
+```text
+Title: <post title>
+
+<post body>
+```
+
+---
+
+## Configuration
+
+All tunable values live in `src/settings.py`. Key ones:
+
+| Setting | Default | Description |
+| --- | --- | --- |
+| `REFERENCE_IMAGE_PATH` | `src/resources/notepad_icon.png` | Reference image for template matching |
+| `TEMPLATE_CONFIDENCE_THRESHOLD` | `0.7` | Minimum match score for BotCity |
+| `OCR_SIMILARITY_THRESHOLD` | `0.6` | Minimum text similarity for OCR |
+| `MAX_GROUNDING_RETRIES` | `3` | How many times to retry finding the icon |
+| `OPEN_TIMEOUT_SECONDS` | `10` | How long to wait for Notepad to open |
+| `CACHE_VERIFY_PAUSE` | `1.0` | Seconds to wait after clicking cached coords |
+| `BETWEEN_POST_PAUSE` | `1.5` | Pause between posts |
+| `OUTPUT_DIR` | `~/Desktop/tjm-project` | Where post files are saved |
 
 ---
 
@@ -86,15 +124,28 @@ or if the desktop font is very small / anti-aliased in a way OCR struggles with.
 
 ```text
 Tjm_Automation/
-├── main.py                          # CLI entry point
-├── pyproject.toml                   # uv / hatchling config
-├── screenshots/                     # annotated output screenshots
+├── main.py                    # Entry point
+├── pyproject.toml             # Dependencies and scripts
+├── screenshots/               # Annotated detection screenshots (auto-created)
 └── src/
-    ├── api_client.py                # fetch posts from JSONPlaceholder
-    ├── notepad.py                   # Notepad launch / type / save / close
-    ├── workflow.py                  # 10-post orchestration loop
-    └── grounding/
-        ├── base.py                  # GroundingStrategy ABC
-        ├── botcity_grounder.py      # BotCity / OpenCV template matching
-        └── ocr_grounder.py          # EasyOCR text detection
+    ├── settings.py            # All configuration constants
+    ├── grounder.py            # Icon detection: BotCity template match → OCR fallback
+    ├── notepad.py             # Open, type, save, close Notepad
+    ├── workflow.py            # Main loop: 10-post orchestration
+    ├── api_client.py          # Fetch posts from JSONPlaceholder
+    ├── utils.py               # Screenshot capture and annotation
+    └── resources/
+        └── notepad_icon.png   # Reference image for template matching
 ```
+
+---
+
+## Known Limitations
+
+| Scenario | Behaviour |
+| --- | --- |
+| No reference image | Falls back to OCR automatically |
+| OCR first run | ~18 s model load; subsequent calls are fast |
+| Icon not found after 3 retries | Raises an error and stops |
+| Different icon theme or DPI | Replace `notepad_icon.png` with a fresh screenshot crop |
+| Win 11 "new" Notepad | Save-As dialog path may differ from classic Notepad |

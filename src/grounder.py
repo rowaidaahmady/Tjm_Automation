@@ -31,13 +31,13 @@ def _get_ocr_reader() -> easyocr.Reader:
     return _ocr_reader
 
 
-def locate_icon() -> tuple[int, int]:
-    """Find the Notepad icon with retries; raise RuntimeError if all attempts fail."""
+def locate_icon() -> tuple[tuple[int, int], float, str]:
+    """Find the icon with retries; return (center, confidence, method) or raise."""
     for attempt in range(1, MAX_GROUNDING_RETRIES + 1):
         logger.info("Grounding attempt %d/%d ...", attempt, MAX_GROUNDING_RETRIES)
-        center = _find_icon()
-        if center:
-            return center
+        result = _find_icon()
+        if result:
+            return result
         if attempt < MAX_GROUNDING_RETRIES:
             logger.warning("Icon not found; retrying in %ss...", RETRY_DELAY_SECONDS)
             time.sleep(RETRY_DELAY_SECONDS)
@@ -48,21 +48,26 @@ def locate_icon() -> tuple[int, int]:
     )
 
 
-def _find_icon() -> tuple[int, int] | None:
-    """Try template matching first; fall back to OCR if it fails or no image exists."""
+def _find_icon() -> tuple[tuple[int, int], float, str] | None:
+    """Try template matching first; fall back to OCR. Returns (center, confidence, method)."""
     if os.path.exists(REFERENCE_IMAGE_PATH):
-        center = _template_match()
-        if center:
-            return center
+        result = _template_match()
+        if result:
+            center, confidence = result
+            return center, confidence, "Template"
         logger.warning("Template match failed; falling back to OCR.")
     else:
         logger.warning("Reference image not found at %s; using OCR.", REFERENCE_IMAGE_PATH)
 
-    return _ocr_find()
+    result = _ocr_find()
+    if result:
+        center, confidence = result
+        return center, confidence, "OCR"
+    return None
 
 
-def _template_match() -> tuple[int, int] | None:
-    """Locate the icon using BotCity's image matching against a live desktop screenshot."""
+def _template_match() -> tuple[tuple[int, int], float] | None:
+    """Locate the icon using BotCity image matching; return (center, confidence) or None."""
     try:
         bot = DesktopBot()
         bot.add_image(ICON_LABEL, REFERENCE_IMAGE_PATH)
@@ -72,14 +77,14 @@ def _template_match() -> tuple[int, int] | None:
             return None
         center = (element.left + element.width // 2, element.top + element.height // 2)
         logger.info("BotCity found icon at %s.", center)
-        return center
+        return center, TEMPLATE_CONFIDENCE_THRESHOLD
     except Exception as exc:
         logger.warning("BotCity raised an error: %s", exc)
         return None
 
 
-def _ocr_find() -> tuple[int, int] | None:
-    """Use EasyOCR to scan the desktop for the icon label; return center (x, y) or None."""
+def _ocr_find() -> tuple[tuple[int, int], float] | None:
+    """Use EasyOCR to scan the desktop for the icon label; return (center, confidence) or None."""
     logger.info("Running OCR scan for '%s'...", ICON_LABEL)
 
     with mss.mss() as sct:
@@ -97,10 +102,10 @@ def _ocr_find() -> tuple[int, int] | None:
             best_center = _bbox_center(bbox)
 
     if best_center:
-        logger.info("OCR found '%s' at %s.", ICON_LABEL, best_center)
-    else:
-        logger.warning("OCR could not find '%s'.", ICON_LABEL)
-    return best_center
+        logger.info("OCR found '%s' at %s (score %.2f).", ICON_LABEL, best_center, best_score)
+        return best_center, best_score
+    logger.warning("OCR could not find '%s'.", ICON_LABEL)
+    return None
 
 
 def _text_similarity(found: str, target: str) -> float:

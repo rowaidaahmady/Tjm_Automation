@@ -6,12 +6,9 @@ import time
 import pyautogui
 
 from .api_client import fetch_posts, format_post_content
-from .utils import take_screenshot, annotate_screenshot, save_annotated_screenshot
 from . import notepad
 from .settings import (
-    ANNOTATE,
     BETWEEN_POST_PAUSE,
-    ICON_LABEL,
     OUTPUT_DIR,
     SHOW_DESKTOP_PAUSE,
 )
@@ -37,12 +34,8 @@ def run_workflow() -> None:
         post_id = post["id"]
         logger.info("--- Processing post %d ---", post_id)
 
-        desktop_shot = take_screenshot() if ANNOTATE else None
-        center = notepad.open_notepad(cached_center)
+        center = notepad.open_notepad(cached_center, post_id)
         cached_center = center
-
-        if ANNOTATE:
-            save_annotated_screenshot(annotate_screenshot(desktop_shot, center, ICON_LABEL), post_id)
 
         notepad.type_content(format_post_content(post))
         notepad.save_as(os.path.join(OUTPUT_DIR, f"post_{post_id}.txt"))
