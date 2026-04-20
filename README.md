@@ -84,6 +84,20 @@ Each screenshot shows:
 
 Files are named: `annotated_post1.png`, `annotated_post2.png`, etc.
 
+### Examples
+
+#### Template matching — icon detected top-left of screen
+
+![Top-left template match](screenshots/annotated_TopLeft.png)
+
+#### Template matching — icon detected bottom-right of screen
+
+![Bottom-right template match](screenshots/annotated_bottomLeft.png)
+
+#### OCR fallback — icon detected at center of screen
+
+![Center OCR detection](screenshots/annotated_Center.png)
+
 ---
 
 ## Output
