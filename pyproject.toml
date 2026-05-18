@@ -13,6 +13,7 @@ dependencies = [
     "opencv-python",
     "requests",
     "numpy",
+    "google-genai",
 ]
 
 [project.scripts]

@@ -43,8 +43,6 @@ DEFAULT_REFERENCE_IMAGE = os.path.join(os.path.dirname(__file__), "resources", "
 # Values below come from the .env file at the project root.
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
-GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-LLM_REQUEST_TIMEOUT = int(os.environ.get("LLM_REQUEST_TIMEOUT", "20"))
 LLM_CONFIDENCE = float(os.environ.get("LLM_CONFIDENCE", "0.8"))
 SCREENSEEKER_MAX_CANDIDATES = int(os.environ.get("SCREENSEEKER_MAX_CANDIDATES", "3"))
 SCREENSEEKER_CROP_PADDING = int(os.environ.get("SCREENSEEKER_CROP_PADDING", "20"))

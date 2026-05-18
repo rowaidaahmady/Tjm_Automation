@@ -6,7 +6,9 @@
       "Bash(.venv/Scripts/python.exe -c \"from botcity.core.cv2find import Box; print\\(Box.__doc__\\); import inspect; print\\(inspect.getsource\\(Box\\)\\)\")",
       "Bash(python -c \"import ast; ast.parse\\(open\\('src/grounder.py'\\).read\\(\\)\\); ast.parse\\(open\\('src/settings.py'\\).read\\(\\)\\); print\\('OK'\\)\")",
       "Bash(python -c ' *)",
-      "Bash(.venv/Scripts/python.exe -c ' *)"
+      "Bash(.venv/Scripts/python.exe -c ' *)",
+      "Bash(.venv/Scripts/python.exe -m pip install google-genai)",
+      "Bash(.venv/Scripts/python.exe -m ensurepip --upgrade)"
     ]
   }
 }
