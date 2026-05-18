@@ -16,6 +16,7 @@ from .settings import (
     REFERENCE_IMAGE_PATH,
     TEMPLATE_CONFIDENCE_THRESHOLD,
     OCR_SIMILARITY_THRESHOLD,
+    USE_LLM_GROUNDING,
 )
 
 logger = logging.getLogger(__name__)
@@ -50,26 +51,28 @@ def locate_icon() -> tuple[tuple[int, int], float, str]:
 
 
 def _find_icon() -> tuple[tuple[int, int], float, str] | None:
-    """Try template matching, then OCR, then LLM. Returns (center, confidence, method)."""
-    # if os.path.exists(REFERENCE_IMAGE_PATH):
-    #     result = _template_match()
-    #     if result:
-    #         center, confidence = result
-    #         return center, confidence, "Template"
-    #     logger.warning("Template match failed; falling back to OCR.")
-    # else:
-    #     logger.warning("Reference image not found at %s; using OCR.", REFERENCE_IMAGE_PATH)
+    """Run ScreenSeekeR if USE_LLM_GROUNDING is true; otherwise try template then OCR."""
+    if USE_LLM_GROUNDING:
+        logger.info("USE_LLM_GROUNDING=true; using ScreenSeekeR only.")
+        result = _screenseeker_find()
+        if result:
+            center, confidence = result
+            return center, confidence, "ScreenSeekeR"
+        return None
 
-    # result = _ocr_find()
-    # if result:
-    #     center, confidence = result
-    #     return center, confidence, "OCR"
+    if os.path.exists(REFERENCE_IMAGE_PATH):
+        result = _template_match()
+        if result:
+            center, confidence = result
+            return center, confidence, "Template"
+        logger.warning("Template match failed; falling back to OCR.")
+    else:
+        logger.warning("Reference image not found at %s; using OCR.", REFERENCE_IMAGE_PATH)
 
-    logger.warning("OCR failed; falling back to ScreenSeekeR (LLM).")
-    result = _screenseeker_find()
+    result = _ocr_find()
     if result:
         center, confidence = result
-        return center, confidence, "ScreenSeekeR"
+        return center, confidence, "OCR"
     return None
 
 

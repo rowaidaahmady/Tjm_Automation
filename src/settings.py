@@ -38,9 +38,8 @@ TEMPLATE_CONFIDENCE_THRESHOLD = 0.7
 OCR_SIMILARITY_THRESHOLD = 0.6
 DEFAULT_REFERENCE_IMAGE = os.path.join(os.path.dirname(__file__), "resources", "notepad_icon.png")
 
-# LLM grounding fallback — ScreenSeekeR (ScreenSpot-Pro, arXiv:2504.07981):
-# a planner proposes candidate regions, then a grounder zooms into each crop.
-# Values below come from the .env file at the project root.
+# LLM:
+USE_LLM_GROUNDING = os.environ.get("USE_LLM_GROUNDING", "false").strip().lower() in ("1", "true", "yes", "on")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 LLM_CONFIDENCE = float(os.environ.get("LLM_CONFIDENCE", "0.8"))

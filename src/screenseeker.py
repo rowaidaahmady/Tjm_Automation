@@ -1,4 +1,4 @@
-"""ScreenSeekeR LLM grounding (ScreenSpot-Pro, arXiv:2504.07981).
+"""ScreenSeekeR LLM grounding .
 
 A planner LLM proposes candidate regions, a grounder LLM points to the icon
 inside each crop, then pixel coordinates are mapped back to the full screenshot.
