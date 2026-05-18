@@ -58,6 +58,27 @@ If no reference image is found, or if template matching returns no result, the b
 - OCR is slower on the **first run** (~18 seconds to load the model), but subsequent calls reuse the cached reader and are much faster.
 - Useful when the icon looks different from the reference (e.g. different theme or icon pack).
 
+### Step 3 — ScreenSeekeR (LLM Grounding)
+
+If you'd rather skip the classic vision pipeline altogether, the bot can ask a vision LLM (Gemini) to find the icon for you. This follows the **ScreenSeekeR** approach from the *ScreenSpot-Pro* paper ([Li et al., arXiv:2504.07981](https://arxiv.org/abs/2504.07981)), adapted to our single-icon use case.
+
+It works in two small stages:
+
+1. **Plan** — send the whole desktop screenshot to Gemini and ask *where the Notepad icon is most likely to be*. The model returns up to three candidate regions, in descending order of probability.
+2. **Ground** — crop each candidate (most likely first) and ask Gemini for the exact center of the icon inside that crop. The first crop that returns a point wins, and the coordinate is mapped back to full-screen pixels.
+
+The "look broadly, then zoom in" pattern is what makes ScreenSeekeR more reliable than asking a model to point at a tiny icon on a full-screen image in one shot.
+
+Turn it on by setting `USE_LLM_GROUNDING=true` in `.env`. When the flag is on, the bot uses **only** Gemini — template matching and OCR are skipped. When it's off (the default), the LLM is never called.
+
+```env
+USE_LLM_GROUNDING=true
+GEMINI_API_KEY=your-key-here
+GEMINI_MODEL=gemini-2.5-flash
+```
+
+The code lives in `src/screenseeker.py` and is built on the `google-genai` SDK.
+
 ---
 
 ## Coordinate Caching
@@ -126,6 +147,9 @@ All tunable values live in `src/settings.py`. Key ones:
 | `REFERENCE_IMAGE_PATH` | `src/resources/notepad_icon.png` | Reference image for template matching |
 | `TEMPLATE_CONFIDENCE_THRESHOLD` | `0.7` | Minimum match score for BotCity |
 | `OCR_SIMILARITY_THRESHOLD` | `0.6` | Minimum text similarity for OCR |
+| `USE_LLM_GROUNDING` | `false` | When `true`, use only ScreenSeekeR (Gemini); skip template and OCR |
+| `SCREENSEEKER_MAX_CANDIDATES` | `3` | Max candidate regions the planner returns |
+| `SCREENSEEKER_CROP_PADDING` | `20` | Pixels of padding added around each candidate crop |
 | `MAX_GROUNDING_RETRIES` | `3` | How many times to retry finding the icon |
 | `OPEN_TIMEOUT_SECONDS` | `10` | How long to wait for Notepad to open |
 | `CACHE_VERIFY_PAUSE` | `1.0` | Seconds to wait after clicking cached coords |
@@ -144,6 +168,7 @@ Tjm_Automation/
 └── src/
     ├── settings.py            # All configuration constants
     ├── grounder.py            # Icon detection: BotCity template match → OCR fallback
+    ├── screenseeker.py        # ScreenSeekeR LLM grounding (Gemini); used when USE_LLM_GROUNDING=true
     ├── notepad.py             # Open, type, save, close Notepad
     ├── workflow.py            # Main loop: 10-post orchestration
     ├── api_client.py          # Fetch posts from JSONPlaceholder
