@@ -1,5 +1,22 @@
 import os
 
+
+def _load_env_file(path: str) -> None:
+    """Load KEY=VALUE pairs from a .env file into os.environ (without overriding)."""
+    if not os.path.exists(path):
+        return
+    with open(path, encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, value = line.partition("=")
+            os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+
+
+_load_env_file(os.path.join(os.path.dirname(__file__), "..", ".env"))
+
+
 # API
 POSTS_URL = "https://jsonplaceholder.typicode.com/posts"
 REQUEST_TIMEOUT_SECONDS = 10
@@ -20,6 +37,17 @@ SCREENSHOTS_DIR = os.path.join(os.path.dirname(__file__), "..", "screenshots")
 TEMPLATE_CONFIDENCE_THRESHOLD = 0.7
 OCR_SIMILARITY_THRESHOLD = 0.6
 DEFAULT_REFERENCE_IMAGE = os.path.join(os.path.dirname(__file__), "resources", "notepad_icon.png")
+
+# LLM grounding fallback — ScreenSeekeR (ScreenSpot-Pro, arXiv:2504.07981):
+# a planner proposes candidate regions, then a grounder zooms into each crop.
+# Values below come from the .env file at the project root.
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+LLM_REQUEST_TIMEOUT = int(os.environ.get("LLM_REQUEST_TIMEOUT", "20"))
+LLM_CONFIDENCE = float(os.environ.get("LLM_CONFIDENCE", "0.8"))
+SCREENSEEKER_MAX_CANDIDATES = int(os.environ.get("SCREENSEEKER_MAX_CANDIDATES", "3"))
+SCREENSEEKER_CROP_PADDING = int(os.environ.get("SCREENSEEKER_CROP_PADDING", "20"))
 
 # Notepad
 NOTEPAD_TITLE_FRAGMENT = "Notepad"

@@ -3,7 +3,10 @@
     "allow": [
       "Bash(.venv/Scripts/python.exe -c \"from botcity.core import DesktopBot; print\\([m for m in dir\\(DesktopBot\\) if not m.startswith\\('_'\\)]\\)\")",
       "Bash(.venv/Scripts/python.exe -c \"from botcity.core import DesktopBot; import inspect; print\\(inspect.signature\\(DesktopBot.find\\)\\); print\\(inspect.signature\\(DesktopBot.add_image\\)\\)\")",
-      "Bash(.venv/Scripts/python.exe -c \"from botcity.core.cv2find import Box; print\\(Box.__doc__\\); import inspect; print\\(inspect.getsource\\(Box\\)\\)\")"
+      "Bash(.venv/Scripts/python.exe -c \"from botcity.core.cv2find import Box; print\\(Box.__doc__\\); import inspect; print\\(inspect.getsource\\(Box\\)\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('src/grounder.py'\\).read\\(\\)\\); ast.parse\\(open\\('src/settings.py'\\).read\\(\\)\\); print\\('OK'\\)\")",
+      "Bash(python -c ' *)",
+      "Bash(.venv/Scripts/python.exe -c ' *)"
     ]
   }
 }
